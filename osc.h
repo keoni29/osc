@@ -11,12 +11,15 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-uint8_t UpdateOsc(uint8_t id);
-uint8_t SetOscReg(uint8_t id, uint16_t reg, uint8_t shape, uint16_t pw);
-uint8_t IncOscPitch(uint8_t id);
-float RenderFrame(void);
-void OscFree();
-void OscInit();
-void OscGenerateFrames(float *buff, uint64_t frames);
-void OscPlay(float *buff, uint64_t frames);
+typedef struct
+{
+	float reg;
+	float count;
+	float pw;
+	uint8_t shape;
+	uint8_t gate;
+} osc_t;
+
+float OscFrame(osc_t *osc);
+
 #endif /* OSC_H_ */
