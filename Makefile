@@ -1,20 +1,20 @@
-NAME := osc
+NAME = osc
+OBJ = main.o osc.o
+SRC = $(wildcard *.c)
+OBJ = $(SRC:%.c=%.o)
 
-CC := gcc
-CFLAGS := -O0 -g3 -Wall -fmessage-length=0
-CLIBS := -lpulse-simple
+
+CC = gcc
+CFLAGS = -O0 -g3 -Wall -fmessage-length=0
+CLIBS = -lpulse-simple
 
 all: osc
 
-osc: main.o osc.o
-	$(CC) main.o osc.o -o $(NAME) $(CLIBS)
+osc: $(OBJ)
+	$(CC) $^ -o $(NAME) $(CLIBS)
 
-main.o: main.c
-	$(CC) $(CFLAGS) -c main.c -o main.o
-
-osc.o: osc.c
-	$(CC) $(CFLAGS) -c osc.c -o osc.o
-
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
 	rm *.a *.o osc
