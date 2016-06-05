@@ -13,9 +13,9 @@
 
 typedef struct
 {
-	float reg;
-	float count;
-	float pw;
+	double reg;
+	double count;
+	double pw;
 	uint8_t shape;
 	uint8_t gate;
 } osc_t;

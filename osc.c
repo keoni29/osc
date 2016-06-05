@@ -3,7 +3,7 @@
 
 float OscFrame(osc_t *osc)
 {
-	float oscVal = 0;
+	double oscVal = 0;
 	osc->count += osc->reg * 2;
 
 	while(osc->count >= 1)

@@ -6,7 +6,7 @@ OBJ = $(SRC:%.c=%.o)
 
 CC = gcc
 CFLAGS = -O0 -g3 -Wall -fmessage-length=0
-CLIBS = -lpulse-simple
+CLIBS = -lpulse-simple -lm
 
 all: osc
 
