@@ -1,16 +1,15 @@
 #include <math.h>
 #include "osc.h"
 
+/* OscFrame = Generate new sample (frame)
+ *
+ * osc = oscillator
+ * returns a single sample (frame)
+ *
+ * Samples are in the range of -1 to 1. */
 float OscFrame(osc_t *osc)
 {
 	double oscVal = 0;
-	osc->count += osc->reg * 2;
-
-	while(osc->count >= 1)
-	{
-		osc->count -= 2;
-	}
-
 	switch (osc->shape)
 	{
 	case 1:
@@ -45,6 +44,13 @@ float OscFrame(osc_t *osc)
 		/* Sawtooth waveform (default) */
 		oscVal = osc->count;
 		break;
+	}
+
+	/* Update phase. */
+	osc->count += osc->reg * 2;
+	while(osc->count >= 1)
+	{
+		osc->count -= 2;
 	}
 
 	return oscVal;

@@ -13,11 +13,11 @@
 
 typedef struct
 {
-	double reg;
 	double count;
 	double pw;
-	uint8_t shape;
+	double reg;
 	uint8_t gate;
+	uint8_t shape;
 } osc_t;
 
 float OscFrame(osc_t *osc);

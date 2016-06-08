@@ -8,8 +8,8 @@
 #ifndef FILTER_H_
 #define FILTER_H_
 
+#define F2RC(fc, fs) 2 * M_PI * fc / fs
 float LPF(float x, float rc);
-float F2RC(float fc, float fs);
 
 
 #endif /* FILTER_H_ */

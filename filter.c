@@ -9,8 +9,3 @@ float LPF(float x, float rc)
 	yn = y;
 	return y;
 }
-
-float F2RC(float fc, float fs)
-{
-	return 2 * M_PI * fc / fs;
-}
