@@ -1,13 +1,16 @@
 #include <math.h>
 #include "osc.h"
 
-/* OscFrame = Generate new sample (frame)
+#include "config.h"
+
+/** OscFrame = Generate new sample (frame)
  *
  * osc = oscillator
- * returns a single sample (frame)
+ * returns a single sample
  *
- * Samples are in the range of -1 to 1. */
-float OscFrame(osc_t *osc)
+ * Sample values are in the range of -1 to 1.
+ */
+float OscSample(struct osc_t *osc)
 {
 	double oscVal = 0;
 	switch (osc->shape)

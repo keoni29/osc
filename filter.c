@@ -1,11 +1,30 @@
 #include <math.h>
 #include "filter.h"
+#include "config.h"
 
-float LPF(float x, float rc)
+/** Macros and defines **/
+/** Calculate filter time constant */
+/************************/
+void CreateFilter(struct filter_t *f, double fc)
 {
-	static double y, yn = 0, xn = 0;
-	y = yn + rc * (xn - yn);
-	xn = x;
-	yn = y;
+	f->yn = 0;
+	f->xn = 0;
+	f->k = 2 * M_PI * fc / sampleRate;
+}
+
+double ProcessLPF(double x, struct filter_t *lpf)
+{
+	double y;
+	y = lpf->yn + lpf->k * (lpf->xn - lpf->yn);
+	lpf->xn = x;
+	lpf->yn = y;
+	return y;
+}
+
+double ProcessHPF(double x, struct filter_t *hpf)
+{
+	double y;
+	y = x - hpf->k * hpf->yn;
+	hpf->yn = y;
 	return y;
 }

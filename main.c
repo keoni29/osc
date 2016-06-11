@@ -6,40 +6,20 @@
 #include <string.h>
 #include "filter.h"
 #include "osc.h"
-
-#if __FLOAT_WORD_ORDER__ == __ORDER_LITTLE_ENDIAN__
-#define FORMAT PA_SAMPLE_FLOAT32LE
-#elif __FLOAT_WORD_ORDER__ == __ORDER_BIG_ENDIAN__
-#define FORMAT PA_SAMPLE_FLOAT32BE
-#endif
+#include "config.h"
 /**********************************/
 
 int main ()
 {
 	float *buff;
-	float seconds = 4;
-	int sampleRate = 192000;
-	osc_t osc, lfo;
-	pa_simple *s;
+	float seconds = 1;
+	pa_sample_spec ss;
+	pa_simple *s = NULL;
+	struct filter_t f;
+	struct osc_t osc;
 	uint64_t frames, i;
 
-	frames = sampleRate * seconds;
-
-	buff = (float *)malloc(frames *  sizeof(float));
-
-	printf("Start!\r\n");
-
-	osc.reg = 200.0f/sampleRate;
-	osc.count = 0;
-	osc.shape = 0;
-	osc.pw = 0.5;
-
-	lfo.reg = 5.0f /sampleRate;
-	lfo.count = 0;
-	lfo.shape = 1;
-
-	pa_sample_spec ss;
-	ss.format = FORMAT;
+	ss.format = PA_SAMPLE_FLOAT32NE;
 	ss.channels = 1;
 	ss.rate = sampleRate;
 	s = pa_simple_new(NULL,
@@ -52,13 +32,20 @@ int main ()
 					  NULL,
 					  NULL
 					  );
+	CreateFilter(&f, 1000);
 
+	printf("Start!\r\n");
+
+	osc.reg = 400.0f/sampleRate;
+	osc.count = 0;
+	osc.shape = 0;
+	osc.pw = 0.5;
+
+	frames = sampleRate * seconds;
+	buff = (float *)malloc(frames *  sizeof(float));
 	for (i = 0; i < frames; i++)
 	{
-		static double amp = 1;
-		amp -= 1.0f/frames;
-		buff[i] = amp * LPF(OscFrame(&osc), F2RC(200, sampleRate));
-		osc.reg = (500 + 10 * (OscFrame(&lfo) + 1)) / sampleRate;
+		buff[i] = ProcessLPF(OscSample(&osc), &f);
 	}
 
 	printf("Begin playback!\r\n");
