@@ -43,9 +43,10 @@ float OscSample(struct osc_t *osc)
 		oscVal = sin(osc->count * M_PI);
 		break;
 	case 0:
-	default:
 		/* Sawtooth waveform (default) */
 		oscVal = osc->count;
+		break;
+	default:
 		break;
 	}
 
@@ -57,5 +58,11 @@ float OscSample(struct osc_t *osc)
 	}
 
 	return oscVal;
+}
+
+void OscSetFreq(struct osc_t *osc, double freq)
+{
+	osc->freq = freq;
+	osc->reg = freq / sampleRate;
 }
 
