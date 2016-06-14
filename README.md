@@ -1,3 +1,3 @@
 == Simple chiptune library ==
 
-Experimental chiptune library using the pulseaudio API.
+Experimental chiptune library using SDL.

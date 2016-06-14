@@ -1,5 +1,6 @@
 #include <math.h>
 #include <SDL2/SDL.h>
+#include "SDL2/SDL_thread.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,61 +8,75 @@
 #include "filter.h"
 #include "osc.h"
 #include "config.h"
+#include "voice.h"
+#include "notes.h"
 /**********************************/
 
-struct chip_t
-{
-	uint8_t ch;
-	struct osc_t *osc[2];
-	struct filter_t *filter[2];
+SDL_mutex *mut;
+
+const uint8_t song[] = {
+		60,62,64,65,67,65,64,62
 };
+
+uint32_t RasterInterrupt(uint32_t interval, void *param)
+{
+	struct voice_t *v = (struct voice_t *)param;
+	static int p = 0;
+	if (SDL_mutexP(mut) == -1)
+	{
+		printf("Could not lock mutex.");
+	}
+	else
+	{
+		printf("Frame %d\r\n", p);
+		VoiceSetFreq(v, Note2Freq(song[p]));
+
+		p ++;
+		if (p == sizeof(song) / sizeof(song[0]))
+		{
+			p = 0;
+		}
+
+		SDL_mutexV(mut);
+	}
+	return interval;
+}
 
 /** Callback for filling the audio stream buffer */
 void RenderSample(void* userdata, uint8_t* stream, int len)
 {
-	int i, c;
-	struct chip_t *chip = (struct chip_t *)userdata;
-	len = len / 4;
-	for (i = 0; i < len; i++)
+	int i;
+	struct voice_t *v = (struct voice_t *)userdata;
+	len = len / sizeof(float);
+	if (SDL_mutexP(mut) == -1)
 	{
-		float* ptr = (float *)stream + i;
-		*ptr = 0;
-		/* Simple filter example */
-		/*for(c = 0; c < chip->ch; c++)
+		printf("Could not lock mutex.");
+	}
+	else
+	{
+		for (i = 0; i < len; i++)
 		{
-			*ptr += ProcessFilter(OscSample(chip->osc[c]), chip->filter[c]) / chip->ch;
-		}*/
-		/* Simple frequency modulation example */
-		OscSetFreq(chip->osc[0], 600 * OscSample(chip->osc[1]) + 800);
-		*ptr += OscSample(chip->osc[0]);
+			float* ptr = (float *)stream + i;
+			*ptr = VoiceSample(v);
+		}
+		SDL_mutexV(mut);
 	}
 }
 
 
 int main()
 {
-	struct osc_t osc0 = {	.count = 0,
-							.shape = 3,
-							.pw = 0.5 };
-	struct osc_t osc1 = {	.count = 0,
-							.shape = 3,
-							.pw = 0.5 };
-	struct filter_t f0, f1;
-	struct chip_t chip;
+	struct voice_t *v = NULL;
 
-	OscSetFreq(&osc0, 100);
-	OscSetFreq(&osc1, 250);
+	/* Setup a patch for this voice */
+	v = CreateVoice();
+	v->op[1].mult = 3;
+	v->op[1].shape = 0;
+	v->opFMSource[0] = 1;
+	v->opFMIndex[0] = 500;
 
-	/* Create an all-pass filter */
-	CreateFilter(&f0, 1000, FILTER_NONE);
-	CreateFilter(&f1, 2000, FILTER_NONE);
+	/* Todo: grouping voices to create polyphonic synth */
 
-	/* Pass pointers to components to chip structure */
-	chip.ch = 2;
-	chip.osc[0] = &osc0;
-	chip.filter[0] = &f0;
-	chip.osc[1] = &osc1;
-	chip.filter[1] = &f1;
 
 	/* Desired audio settings */
 	SDL_AudioSpec have = {
@@ -70,7 +85,7 @@ int main()
 		.channels = 1,
 		.samples = 4096,
 		.callback = RenderSample,
-		.userdata = (void *)&chip
+		.userdata = (void *)v
 	};
 	SDL_AudioSpec want;
 
@@ -85,33 +100,21 @@ int main()
 	    exit(2);
 	}
 
+	mut = SDL_CreateMutex();
+	SDL_TimerID tid = SDL_AddTimer(500, RasterInterrupt, v);
+
 	printf("Start... \r\n");
 
 	/* Start playing sound */
 	SDL_PauseAudio(0);
 
-	/* Do some fancy frequency modulation */
-	OscSetFreq(&osc1, 25);
-	SDL_Delay(500);
-	OscSetFreq(&osc1, 50);
-	SDL_Delay(500);
-	OscSetFreq(&osc1, 100);
-	SDL_Delay(500);
-	OscSetFreq(&osc1, 200);
-	SDL_Delay(500);
-	OscSetFreq(&osc1, 400);
-	SDL_Delay(500);
-	OscSetFreq(&osc1, 800);
-	SDL_Delay(500);
-	OscSetFreq(&osc1, 1600);
-	SDL_Delay(500);
-	OscSetFreq(&osc1, 3200);
-	SDL_Delay(500);
-
+	//SDL_Delay(2000);
+	getchar();
 	/* Stop playing sound */
 	SDL_CloseAudio();
-
+	SDL_RemoveTimer(tid);
 	printf("Stop... \r\n");
+
 
 	return 0;
 }

@@ -15,9 +15,8 @@ struct osc_t
 {
 	double count;	/**< Phase accumulator (calculated)*/
 	double pw;		/**< Pulsewidth (only for pwm mode) */
-	double reg;		/**< Phase accumulator increment value (calculated) */
-	double freq;	/**< Oscillator frequency in Hz */
-	uint8_t gate;	/**< Oscillator gate bit (not implemented.) 0 halts the oscillator, 1 resumes it*/
+	double inc;		/**< Phase accumulator increment value */
+	double mult;	/**< Frequency multiplier */
 	uint8_t shape;	/**< Wave shape of the oscillator */
 };
 

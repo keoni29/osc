@@ -51,7 +51,7 @@ float OscSample(struct osc_t *osc)
 	}
 
 	/* Update phase. */
-	osc->count += osc->reg * 2;
+	osc->count += osc->inc * osc->mult * 2;
 	while(osc->count >= 1)
 	{
 		osc->count -= 2;
@@ -59,10 +59,3 @@ float OscSample(struct osc_t *osc)
 
 	return oscVal;
 }
-
-void OscSetFreq(struct osc_t *osc, double freq)
-{
-	osc->freq = freq;
-	osc->reg = freq / sampleRate;
-}
-
