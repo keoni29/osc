@@ -12,10 +12,12 @@
 #include "notes.h"
 /**********************************/
 
-SDL_mutex *mut;
+static SDL_mutex *mut;
+static int gate = 0;
+static double env, attack = 0.1, release = 0.5;
 
 const uint8_t song[] = {
-		60,62,64,65,67,65,64,62
+		60,0,62,0,64,0,65,0,67,0,65,0,64,0,62,0
 };
 
 uint32_t RasterInterrupt(uint32_t interval, void *param)
@@ -29,7 +31,15 @@ uint32_t RasterInterrupt(uint32_t interval, void *param)
 	else
 	{
 		printf("Frame %d\r\n", p);
-		VoiceSetFreq(v, Note2Freq(song[p]));
+		if (song[p])
+		{
+			VoiceSetFreq(v, Note2Freq(song[p]));
+			gate = 1;
+		}
+		else
+		{
+			gate = 0;
+		}
 
 		p ++;
 		if (p == sizeof(song) / sizeof(song[0]))
@@ -58,6 +68,25 @@ void RenderSample(void* userdata, uint8_t* stream, int len)
 		{
 			float* ptr = (float *)stream + i;
 			*ptr = VoiceSample(v);
+
+			v->opFMIndex[0] = env * 1000;
+
+			if (gate)
+			{
+				env += 1/(sampleRate * attack);
+				if (env > 1)
+				{
+					env = 1;
+				}
+			}
+			else
+			{
+				env -= 1/(sampleRate * release);
+				if (env < 0)
+				{
+					env = 0;
+				}
+			}
 		}
 		SDL_mutexV(mut);
 	}
@@ -70,10 +99,13 @@ int main()
 
 	/* Setup a patch for this voice */
 	v = CreateVoice();
-	v->op[1].mult = 3;
-	v->op[1].shape = 0;
+	v->op[0].shape = 3;
+	v->op[0].pw = 0.125;
+	v->mix[0] = 0.2;
+	v->op[1].mult = 0.2;
+	v->op[1].shape = 3;
 	v->opFMSource[0] = 1;
-	v->opFMIndex[0] = 500;
+
 
 	/* Todo: grouping voices to create polyphonic synth */
 

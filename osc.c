@@ -33,7 +33,7 @@ float OscSample(struct osc_t *osc)
 	case 2:
 		/* Pulse waveform */
 		oscVal = -1;
-		if (osc->count > osc->pw)
+		if (osc->count > (osc->pw * 2 - 1))
 		{
 			oscVal = 1;
 		}
