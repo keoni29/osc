@@ -60,23 +60,30 @@ double VoiceSample(struct voice_t* v)
 	{
 		double amp = UpdateEnv(&v->env[i], v->gate);
 
-		switch(v->op[i].shape)
+		if (amp)
 		{
-		case 1:
-			s[i] = Triangle(OscSample(&v->op[i])) * amp;
-			break;
-		case 2:
-			s[i] = Saw(OscSample(&v->op[i])) * amp;
-			break;
-		case 3:
-			s[i] = Pulse(OscSample(&v->op[i]), v->op[i].pw) * amp;
-			break;
-		case 0:
-		default:
-			s[i] = Sine(OscSample(&v->op[i])) * amp;
-			break;
+			switch(v->op[i].shape)
+			{
+			case 1:
+				s[i] = Triangle(OscSample(&v->op[i])) * amp;
+				break;
+			case 2:
+				s[i] = Saw(OscSample(&v->op[i])) * amp;
+				break;
+			case 3:
+				s[i] = Pulse(OscSample(&v->op[i]), v->op[i].pw) * amp;
+				break;
+			case 0:
+			default:
+				s[i] = Sine(OscSample(&v->op[i])) * amp;
+				break;
+			}
+
+			if (v->mix[i])
+			{
+				sum += s[i] * v->mix[i];
+			}
 		}
-		sum += s[i] * v->mix[i];
 	}
 
 	for (i = 0; i < VOICE_OPCOUNT; i++)
@@ -202,4 +209,21 @@ double Saw(double phase)
 {
 	phase = fmod(phase, 1);
 	return phase * 2 - 1;
+}
+
+/** Set gate bit and reset operator phase */
+void VoiceGateOn(struct voice_t *v)
+{
+	int i;
+	v->gate = 1;
+	for(i = 0; i < VOICE_OPCOUNT; i++)
+	{
+		v->op[i].count = 0;
+	}
+}
+
+/** Clear gate bit */
+void VoiceGateOff(struct voice_t *v)
+{
+	v->gate = 0;
 }

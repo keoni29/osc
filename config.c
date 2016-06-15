@@ -1,1 +1,1 @@
-const int sampleRate = 192000; /**< Global sample/frame rate of the sound playback. */
+const int sampleRate = 44100; /**< Global sample/frame rate of the sound playback. */

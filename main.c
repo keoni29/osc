@@ -11,50 +11,32 @@
 #include "notes.h"
 /**********************************/
 
-static SDL_mutex *mut;
+#define VOICE_COUNT 17
 
-const uint8_t song[] = {
-		60,0,62,0,64,0,65,0,67,0,65,0,64,0,62,0
-};
+static SDL_mutex *mut;
 
 static int Code2Note(SDL_Scancode s);
 
-uint32_t RasterInterrupt(uint32_t interval, void *param)
+/*uint32_t RasterInterrupt(uint32_t interval, void *param)
 {
 	struct voice_t *v = (struct voice_t *)param;
-	static int p = 0;
 	if (SDL_mutexP(mut) == -1)
 	{
 		fprintf(stderr, "Could not lock mutex.");
 	}
 	else
 	{
-		if (song[p])
-		{
-			VoiceSetFreq(v, Note2Freq(song[p]));
-			v->gate = 1;
-		}
-		else
-		{
-			v->gate = 0;
-		}
-
-		p ++;
-		if (p == sizeof(song) / sizeof(song[0]))
-		{
-			p = 0;
-		}
-
+		...
 		SDL_mutexV(mut);
 	}
 	return interval;
-}
+}*/
 
 /** Callback for filling the audio stream buffer */
 void RenderSample(void* userdata, uint8_t* stream, int len)
 {
-	int i;
-	struct voice_t *v = (struct voice_t *)userdata;
+	int i, j;
+	struct voice_t **e = (struct voice_t **)userdata;
 	len = len / sizeof(float);
 	if (SDL_mutexP(mut) == -1)
 	{
@@ -65,7 +47,12 @@ void RenderSample(void* userdata, uint8_t* stream, int len)
 		for (i = 0; i < len; i++)
 		{
 			float* ptr = (float *)stream + i;
-			*ptr = VoiceSample(v);
+			*ptr = 0;
+			for (j = 0; j < VOICE_COUNT; j++)
+			{
+				struct voice_t *v = *(e + j);
+				*ptr += VoiceSample(v) / 4;
+			}
 		}
 		SDL_mutexV(mut);
 	}
@@ -74,10 +61,30 @@ void RenderSample(void* userdata, uint8_t* stream, int len)
 
 int main(int argc, char **argv)
 {
-	struct voice_t *v = NULL;
+	struct voice_t *v;
+	struct voice_t *ensemble[VOICE_COUNT];
+	int i, j;
 	/* Setup a patch for this voice */
-	CreateVoice(&v);
-	/* Todo: grouping voices to create polyphonic synth */
+	for(i = 0; i < VOICE_COUNT; i++)
+	{
+		CreateVoice(&v);
+		ensemble[i] = v;
+		v->opFMIndex[0] = 5;
+		v->opFMSource[0] = 1;
+		v->env[0].r = 0.5;
+
+		v->env[1].a = 1;
+		v->op[1].mult = 0.25;
+		v->env[1].r = 0.8;
+
+		v->op[2].mult = 2;
+		v->mix[2] = 1;
+		for (j = 0; j < VOICE_OPCOUNT - 1; j++)
+		{
+			;
+		}
+	}
+
 	/* Desired audio settings */
 	SDL_AudioSpec have = {
 		.freq = sampleRate,
@@ -85,41 +92,9 @@ int main(int argc, char **argv)
 		.channels = 1,
 		.samples = 4096,
 		.callback = RenderSample,
-		.userdata = (void *)v
+		.userdata = (void *)&ensemble
 	};
 	SDL_AudioSpec want;
-
-	v->opFMSource[0] = 1;
-	v->op[0].shape = 0;
-	v->op[0].pw = 0.25;
-	v->mix[0] = 0.2;
-	v->op[1].mult = 0.25;
-	v->op[1].shape = 0;
-	v->opFMIndex[0] = 1;
-	v->env[1].r = 1.5;
-	v->env[1].a = 0.3;
-	v->env[0].r = 2;
-
-	if (argc >= 2)
-	{
-		v->op[1].mult = strtod(argv[1], NULL);
-	}
-
-	if (argc >= 3)
-	{
-		v->opFMIndex[0] = strtod(argv[2], NULL);
-	}
-
-	if (argc >= 4)
-	{
-		v->opFMSource[1] = 2;
-		v->opFMIndex[1] = strtod(argv[3], NULL);
-	}
-
-	if (argc >= 5)
-	{
-		v->op[2].mult = strtod(argv[4], NULL);;
-	}
 
 	/* Start SDL with audio support */
 	if(SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO)==-1) {
@@ -151,7 +126,7 @@ int main(int argc, char **argv)
 	while (running)
 	{
 		int note;
-		const int oct = 5;
+		static int oct = 5;
 		static double freq = 0;
 		while(SDL_PollEvent(&e))
 		{
@@ -161,7 +136,7 @@ int main(int argc, char **argv)
 				break;
 			}
 
-			if (e.type == SDL_KEYDOWN)
+			if (e.type == SDL_KEYDOWN && e.key.repeat == 0)
 			{
 				note = Code2Note(e.key.keysym.scancode);
 				if (note >= 0)
@@ -173,13 +148,25 @@ int main(int argc, char **argv)
 					else
 					{
 						freq = Note2Freq(note + 12*oct);
+						v = *(ensemble + note);
 						VoiceSetFreq(v, freq);
-						v->gate = 1;
+						VoiceGateOn(v);
 						SDL_mutexV(mut);
 					}
 				}
+				else
+				{
+					if (e.key.keysym.scancode == SDL_SCANCODE_EQUALS)
+					{
+						oct +=1;
+					}
+					else if (e.key.keysym.scancode == SDL_SCANCODE_MINUS)
+					{
+						oct -=1;
+					}
+				}
 			}
-			else if (e.type == SDL_KEYUP)
+			else if (e.type == SDL_KEYUP && e.key.repeat == 0)
 			{
 				if (SDL_mutexP(mut) == -1)
 				{
@@ -187,34 +174,20 @@ int main(int argc, char **argv)
 				}
 				else
 				{
-					v->gate = 0;
+					note = Code2Note(e.key.keysym.scancode);
+					if (note >= 0)
+					{
+						v = *(ensemble + note);
+						VoiceGateOff(v);
+					}
 					SDL_mutexV(mut);
 				}
 			}
 
 		}
 
-		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 1);
-		SDL_RenderClear(renderer);
-
-		SDL_SetRenderDrawColor(renderer, 255, 0, 0, 1);
-		int i;
-		for (i = 0; i < 640; i++)
-		{
-			float t = i * freq / 3000;
-			float amp = 0;
-			if (SDL_mutexP(mut) == -1)
-			{
-				fprintf(stderr, "Could not lock mutex.\r\n");
-			}
-			else
-			{
-				amp = v->env[0].amp;
-				SDL_mutexV(mut);
-			}
-			SDL_RenderDrawPoint(renderer, i, 120 + amp * 50 * Sine(t / 640.0 + 2 * Sine(t / 160.0)));
-		}
-
+		/*SDL_SetRenderDrawColor(renderer, 0, 0, 0, 1);
+		SDL_RenderClear(renderer);*/
 		SDL_RenderPresent(renderer);
 	}
 
@@ -226,8 +199,6 @@ int main(int argc, char **argv)
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
 	SDL_Quit();
-
-
 
 	return 0;
 }

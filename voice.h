@@ -12,7 +12,7 @@
 #include <stdlib.h>
 
 /** The amount of operators per voice */
-#define VOICE_OPCOUNT 4
+#define VOICE_OPCOUNT 3
 
 struct osc_t
 {
@@ -49,5 +49,8 @@ double Pulse(double phase, double pw);
 double Triangle(double phase);
 double Sine(double phase);
 double Saw(double phase);
+
+void VoiceGateOn(struct voice_t *v);
+void VoiceGateOff(struct voice_t *v);
 
 #endif /* VOICE_H_ */
