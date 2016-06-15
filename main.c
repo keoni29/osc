@@ -6,15 +6,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include "filter.h"
-#include "osc.h"
 #include "config.h"
 #include "voice.h"
 #include "notes.h"
 /**********************************/
 
 static SDL_mutex *mut;
-static int gate = 0;
-static double env, attack = 0.001, release = 0.5, mod = 1000;
 
 const uint8_t song[] = {
 		60,0,62,0,64,0,65,0,67,0,65,0,64,0,62,0
@@ -35,11 +32,11 @@ uint32_t RasterInterrupt(uint32_t interval, void *param)
 		if (song[p])
 		{
 			VoiceSetFreq(v, Note2Freq(song[p]));
-			gate = 1;
+			v->gate = 1;
 		}
 		else
 		{
-			gate = 0;
+			v->gate = 0;
 		}
 
 		p ++;
@@ -68,26 +65,7 @@ void RenderSample(void* userdata, uint8_t* stream, int len)
 		for (i = 0; i < len; i++)
 		{
 			float* ptr = (float *)stream + i;
-			*ptr = VoiceSample(v) * env;
-
-			v->opFMIndex[0] = env * mod;
-
-			if (gate)
-			{
-				env += 1/(sampleRate * attack);
-				if (env > 1)
-				{
-					env = 1;
-				}
-			}
-			else
-			{
-				env -= 1/(sampleRate * release);
-				if (env < 0)
-				{
-					env = 0;
-				}
-			}
+			*ptr = VoiceSample(v);
 		}
 		SDL_mutexV(mut);
 	}
@@ -97,41 +75,9 @@ void RenderSample(void* userdata, uint8_t* stream, int len)
 int main(int argc, char **argv)
 {
 	struct voice_t *v = NULL;
-
 	/* Setup a patch for this voice */
-	v = CreateVoice();
-	v->opFMSource[0] = 1;
-	v->op[0].shape = 3;
-	v->op[0].pw = 0.125;
-	v->mix[0] = 0.2;
-	v->op[1].mult = 0.5;
-	v->op[1].shape = 3;
-
-
-	if (argc >= 2)
-	{
-		v->op[1].mult = strtod(argv[1], NULL);
-	}
-
-	if (argc >= 3)
-	{
-		mod = strtod(argv[2], NULL);
-	}
-
-	if (argc >= 4)
-	{
-		v->opFMSource[1] = 2;
-		v->opFMIndex[1] = strtod(argv[3], NULL);;
-	}
-
-	if (argc >= 5)
-	{
-		v->op[2].mult = strtod(argv[4], NULL);;
-	}
-
+	CreateVoice(&v);
 	/* Todo: grouping voices to create polyphonic synth */
-
-
 	/* Desired audio settings */
 	SDL_AudioSpec have = {
 		.freq = sampleRate,
@@ -142,6 +88,38 @@ int main(int argc, char **argv)
 		.userdata = (void *)v
 	};
 	SDL_AudioSpec want;
+
+	v->opFMSource[0] = 1;
+	v->op[0].shape = 0;
+	v->op[0].pw = 0.25;
+	v->mix[0] = 0.2;
+	v->op[1].mult = 0.25;
+	v->op[1].shape = 0;
+	v->opFMIndex[0] = 1;
+	v->env[1].r = 1.5;
+	v->env[1].a = 0.3;
+	v->env[0].r = 2;
+
+	if (argc >= 2)
+	{
+		v->op[1].mult = strtod(argv[1], NULL);
+	}
+
+	if (argc >= 3)
+	{
+		v->opFMIndex[0] = strtod(argv[2], NULL);
+	}
+
+	if (argc >= 4)
+	{
+		v->opFMSource[1] = 2;
+		v->opFMIndex[1] = strtod(argv[3], NULL);
+	}
+
+	if (argc >= 5)
+	{
+		v->op[2].mult = strtod(argv[4], NULL);;
+	}
 
 	/* Start SDL with audio support */
 	if(SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO)==-1) {
@@ -156,7 +134,7 @@ int main(int argc, char **argv)
 
 	SDL_Renderer *renderer = NULL;
 	SDL_Window *window = NULL;
-	window = SDL_CreateWindow("FM synth demo", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 320, 240, 0);
+	window = SDL_CreateWindow("FM synth demo", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 240, 0);
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 
 
@@ -172,6 +150,9 @@ int main(int argc, char **argv)
 	uint8_t running = 1;
 	while (running)
 	{
+		int note;
+		const int oct = 5;
+		static double freq = 0;
 		while(SDL_PollEvent(&e))
 		{
 			if (e.type == SDL_QUIT)
@@ -182,7 +163,6 @@ int main(int argc, char **argv)
 
 			if (e.type == SDL_KEYDOWN)
 			{
-				int note;
 				note = Code2Note(e.key.keysym.scancode);
 				if (note >= 0)
 				{
@@ -192,16 +172,24 @@ int main(int argc, char **argv)
 					}
 					else
 					{
-						int oct = 6;
-						VoiceSetFreq(v, Note2Freq(note + 12*oct));
-						gate = 1;
+						freq = Note2Freq(note + 12*oct);
+						VoiceSetFreq(v, freq);
+						v->gate = 1;
 						SDL_mutexV(mut);
 					}
 				}
 			}
 			else if (e.type == SDL_KEYUP)
 			{
-				gate = 0;
+				if (SDL_mutexP(mut) == -1)
+				{
+					fprintf(stderr, "Could not lock mutex.\r\n");
+				}
+				else
+				{
+					v->gate = 0;
+					SDL_mutexV(mut);
+				}
 			}
 
 		}
@@ -211,10 +199,20 @@ int main(int argc, char **argv)
 
 		SDL_SetRenderDrawColor(renderer, 255, 0, 0, 1);
 		int i;
-		for (i = 0; i < 320; i++)
+		for (i = 0; i < 640; i++)
 		{
-			int a = 120 *  (1 - env) + 110;
-			SDL_RenderDrawPoint(renderer, i, a);
+			float t = i * freq / 3000;
+			float amp = 0;
+			if (SDL_mutexP(mut) == -1)
+			{
+				fprintf(stderr, "Could not lock mutex.\r\n");
+			}
+			else
+			{
+				amp = v->env[0].amp;
+				SDL_mutexV(mut);
+			}
+			SDL_RenderDrawPoint(renderer, i, 120 + amp * 50 * Sine(t / 640.0 + 2 * Sine(t / 160.0)));
 		}
 
 		SDL_RenderPresent(renderer);

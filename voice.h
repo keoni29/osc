@@ -8,8 +8,26 @@
 #ifndef VOICE_H_
 #define VOICE_H_
 
+#include <stdint.h>
+#include <stdlib.h>
+
 /** The amount of operators per voice */
 #define VOICE_OPCOUNT 4
+
+struct osc_t
+{
+	double count;	/**< Phase accumulator (calculated)*/
+	double pw;		/**< Pulsewidth (only for pwm mode) */
+	double inc;		/**< Phase accumulator increment value */
+	double mult;	/**< Frequency multiplier */
+	uint8_t shape;	/**< Wave shape of the oscillator */
+};
+
+struct env_t
+{
+	uint8_t gate, dir;
+	double a, d, s, r, amp;
+};
 
 struct voice_t
 {
@@ -20,12 +38,16 @@ struct voice_t
 	double opFMIndex[VOICE_OPCOUNT];
 	struct filter_t filter[2];			/**< Two filters that can be configured as HPF, LPF, BPF or APF. */
 	double mix[VOICE_OPCOUNT];
+	struct env_t env[VOICE_OPCOUNT];	/**< Volume envelope for each operator */
 };
 
-
-
-struct voice_t* CreateVoice();
+int CreateVoice(struct voice_t **v);
 double VoiceSample(struct voice_t* v);
 void VoiceSetFreq(struct voice_t* v, double f);
+
+double Pulse(double phase, double pw);
+double Triangle(double phase);
+double Sine(double phase);
+double Saw(double phase);
 
 #endif /* VOICE_H_ */
