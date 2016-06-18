@@ -10,9 +10,10 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include "filter.h"
 
 /** The amount of operators per voice */
-#define VOICE_OPCOUNT 3
+#define VOICE_OPCOUNT 4
 
 struct osc_t
 {
