@@ -1,0 +1,233 @@
+#include <SDL2/SDL.h>
+#include "SDL2/SDL_thread.h"
+#include "notes.h"
+#include "voice.h"
+#include "config.h"
+#include "play.h"
+#include "smf.h"
+
+#define VOICE_COUNT 20
+
+static SDL_mutex *mut;
+static struct voice_t *ensemble[VOICE_COUNT];
+static int vgate[VOICE_COUNT];
+
+uint32_t Play(uint32_t interval, void *param)
+{
+	int result;
+	struct SMF_event e;
+	int start = SDL_GetTicks();
+	int end;
+	interval = 10;	/* In case interval value is not updated */
+	while (1)
+	{
+		result = SMF_PollEvent(&e, &interval);
+
+		if (result == 1)
+		{
+			/* Todo process every event */
+			switch (e.status)
+			{
+			case SMF_NoteOff:
+				if (e.channel != 10)
+					PlayNoteOff(e.p1, e.p1);
+				break;
+
+			case SMF_NoteOn:
+				if (e.channel != 10)
+					PlayNoteOn(e.p1, e.p1);
+				break;
+
+			case SMF_KeyPressure:
+
+				break;
+
+			case SMF_ControlChange:
+
+				break;
+
+			case SMF_ChannelPressure:
+
+				break;
+
+			case SMF_PitchBend:
+
+				break;
+
+			case SMF_Unhandled:
+			default:
+				/* Todo handle unhandled events */
+				break;
+			}
+		}
+
+		/** Account for latency */
+		if (interval)
+		{
+			break;
+		}
+	}
+
+	/* Todo figure out why timing is off */
+	/*end = SDL_GetTicks();
+	if (end - start <= interval)
+	{
+		interval -= end - start;
+	}*/
+
+	return interval;
+}
+
+/** Callback for filling the audio stream buffer */
+void PlayRenderSample(void* userdata, uint8_t* stream, int len)
+{
+	int i, j;
+	struct voice_t **e = (struct voice_t **)userdata;
+	len = len / sizeof(float);
+	if (SDL_mutexP(mut) == -1)
+	{
+		fprintf(stderr, "Could not lock mutex.");
+	}
+	else
+	{
+		for (i = 0; i < len; i++)
+		{
+			float* ptr = (float *)stream + i;
+			*ptr = 0;
+			for (j = 0; j < VOICE_COUNT; j++)
+			{
+				struct voice_t *v = *(e + j);
+				*ptr += VoiceSample(v) / 4;
+			}
+		}
+		SDL_mutexV(mut);
+	}
+}
+
+int PlayInit()
+{
+	struct voice_t *v;
+	int i, j;
+	/* Setup a patch for this voice */
+	for(i = 0; i < VOICE_COUNT; i++)
+	{
+		CreateVoice(&v);
+		ensemble[i] = v;
+		/*v->opFMIndex[0] = 5;
+		v->opFMSource[0] = 1;
+		v->env[0].r = 0.5;
+
+		v->env[1].a = 1;
+		v->op[1].mult = 0.25;
+		v->env[1].r = 0.8;
+
+		v->op[2].mult = 2;
+		v->mix[2] = 1;*/
+		for (j = 0; j < VOICE_OPCOUNT - 1; j++)
+		{
+			;
+		}
+
+		vgate[i] = -1;
+	}
+
+	/* Desired audio settings */
+	SDL_AudioSpec have = {
+		.freq = sampleRate,
+		.format = AUDIO_F32SYS,
+		.channels = 1,
+		.samples = 4096,
+		.callback = PlayRenderSample,
+		.userdata = (void *)&ensemble
+	};
+	SDL_AudioSpec want;
+
+	if(SDL_OpenAudio(&have, &want)==-1)
+	{
+		fprintf(stderr, "SDL_OpenAudio: %s\n", SDL_GetError());
+		exit(2);
+	}
+
+	mut = SDL_CreateMutex();
+	/* Start playing sound */
+	SDL_PauseAudio(0);
+
+	return 0;
+}
+
+int PlayNoteOn(int note, int key)
+{
+	double freq;
+	int i;
+	uint8_t r = 0;
+	if (key >= 0 && note >= 0)
+	{
+		for (i = 0; i < VOICE_COUNT; i++)
+		{
+			if (vgate[i] == -1)
+			{
+				vgate[i] = key;
+				r = 1;
+				break;
+			}
+		}
+
+		if (!r)
+		{
+			return -1;
+		}
+
+		if (SDL_mutexP(mut) == -1)
+		{
+			fprintf(stderr, "Could not lock mutex.\r\n");
+		}
+		else
+		{
+			struct voice_t *v;
+			freq = Note2Freq(note);
+			v = *(ensemble + i);
+			VoiceSetFreq(v, freq);
+			VoiceGateOn(v);
+			SDL_mutexV(mut);
+		}
+	}
+
+	return key;
+}
+
+int PlayNoteOff(int note, int key)
+{
+	int i;
+	uint8_t r = 0;
+	if (key >= 0 && note >= 0)
+	{
+		for (i = 0; i < VOICE_COUNT; i++)
+		{
+			if (vgate[i] == key)
+			{
+				vgate[i] = -1;
+				r = 1;
+				break;
+			}
+		}
+
+		if (!r)
+		{
+			return -1;
+		}
+
+		struct voice_t *v;
+		v = *(ensemble + i);
+
+		if (SDL_mutexP(mut) == -1)
+		{
+			fprintf(stderr, "Could not lock mutex.\r\n");
+		}
+		else
+		{
+			VoiceGateOff(v);
+			SDL_mutexV(mut);
+		}
+	}
+	return key;
+}

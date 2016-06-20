@@ -9,25 +9,10 @@
 #include "voice.h"
 #include "notes.h"
 #include "play.h"
+#include "smf.h"
 /**********************************/
 
 static int Code2Note(SDL_Scancode s);
-
-/*uint32_t RasterInterrupt(uint32_t interval, void *param)
-{
-	struct voice_t *v = (struct voice_t *)param;
-	if (SDL_mutexP(mut) == -1)
-	{
-		fprintf(stderr, "Could not lock mutex.");
-	}
-	else
-	{
-		...
-		SDL_mutexV(mut);
-	}
-	return interval;
-}*/
-
 
 int main(int argc, char **argv)
 {
@@ -44,7 +29,13 @@ int main(int argc, char **argv)
 
 	PlayInit();
 
-	//SDL_TimerID tid = SDL_AddTimer(500, RasterInterrupt, v);
+	if (SMF_Load("bewstorm0.mid") < 0)
+	{
+		fprintf(stderr, "Error loading midi file.\r\n");
+		exit(1);
+	}
+
+	SDL_TimerID tid = SDL_AddTimer(500, Play, NULL);
 
 	printf("Start... \r\n");
 
@@ -96,14 +87,14 @@ int main(int argc, char **argv)
 
 	/* Stop playing sound */
 	SDL_CloseAudio();
-	//SDL_RemoveTimer(tid);
+	SDL_RemoveTimer(tid);
 	printf("Stop... \r\n");
 
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
 	SDL_Quit();
 
-	return 0;
+	exit(0);
 }
 
 int Code2Note(SDL_Scancode s)
