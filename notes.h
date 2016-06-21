@@ -9,6 +9,6 @@
 #define NOTES_H_
 
 #include <stdint.h>
-double Note2Freq(uint8_t note);
+float Note2Freq(uint8_t note);
 
 #endif /* NOTES_H_ */

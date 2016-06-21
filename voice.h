@@ -17,39 +17,39 @@
 
 struct osc_t
 {
-	double count;	/**< Phase accumulator (calculated)*/
-	double pw;		/**< Pulsewidth (only for pwm mode) */
-	double inc;		/**< Phase accumulator increment value */
-	double mult;	/**< Frequency multiplier */
+	float count;	/**< Phase accumulator (calculated)*/
+	float pw;		/**< Pulsewidth (only for pwm mode) */
+	float inc;		/**< Phase accumulator increment value */
+	float mult;	/**< Frequency multiplier */
 	uint8_t shape;	/**< Wave shape of the oscillator */
 };
 
 struct env_t
 {
 	uint8_t gate, dir;
-	double a, d, s, r, amp;
+	float a, d, s, r, amp;
 };
 
 struct voice_t
 {
-	double freq;						/**< Voice base frequency in Hz */
+	float freq;						/**< Voice base frequency in Hz */
 	uint8_t gate; 						/**< Start playing when 1, stop playing when 0 (not implemented) */
 	struct osc_t op[VOICE_OPCOUNT];		/**< Array of operators */
 	int opFMSource[VOICE_OPCOUNT];
-	double opFMIndex[VOICE_OPCOUNT];
+	float opFMIndex[VOICE_OPCOUNT];
 	struct filter_t filter[2];			/**< Two filters that can be configured as HPF, LPF, BPF or APF. */
-	double mix[VOICE_OPCOUNT];
+	float mix[VOICE_OPCOUNT];
 	struct env_t env[VOICE_OPCOUNT];	/**< Volume envelope for each operator */
 };
 
 int CreateVoice(struct voice_t **v);
-double VoiceSample(struct voice_t* v);
-void VoiceSetFreq(struct voice_t* v, double f);
+float VoiceSample(struct voice_t* v);
+void VoiceSetFreq(struct voice_t* v, float f);
 
-double Pulse(double phase, double pw);
-double Triangle(double phase);
-double Sine(double phase);
-double Saw(double phase);
+float Pulse(float phase, float pw);
+float Triangle(float phase);
+float Sine(float phase);
+float Saw(float phase);
 
 void VoiceGateOn(struct voice_t *v);
 void VoiceGateOff(struct voice_t *v);

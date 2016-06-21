@@ -192,7 +192,7 @@ int PlayInit()
 
 int PlayNoteOn(int note, int key)
 {
-	double freq;
+	float freq;
 	int i;
 	uint8_t r = 0;
 	if (key >= 0 && note >= 0)

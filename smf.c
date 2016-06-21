@@ -9,7 +9,6 @@ static uint32_t VData(struct SMF_track *track);	/**< Parse variable length data 
 static uint8_t Data(struct SMF_track *track);	/**< Parse single byte data field */
 static uint8_t Peek(const struct SMF_track *track);	/**< Peek single byte data field without incrementing pointer */
 static void SkipData(struct SMF_track *track, uint32_t skip);	/**< Skip over several fields */
-static char *Terminate(char* dst, char *src, uint32_t len); /**< Terminate a character string of specified length. */
 static int VerifyTrack(struct SMF_track* track);
 static int _strcmpl(char *str1, char *str2, uint32_t len);	/**< Compare two strings */
 
@@ -365,20 +364,4 @@ static void SkipData(struct SMF_track *track, uint32_t skip)
 		Data(track);
 		--skip;
 	}
-}
-
-static char *Terminate(char* dst, char *src, uint32_t len)
-{
-	uint32_t i;
-	char *result = dst;
-	/* Copy string */
-	for (i = 0; i < len; i++)
-	{
-		*dst = *src;
-		++src;
-		++dst;
-	}
-	/* Append termination character */
-	*dst = 0;
-	return result;
 }

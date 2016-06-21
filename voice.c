@@ -4,8 +4,8 @@
 #include "config.h"
 
 static void DefaultVoice(struct voice_t *v);
-static double UpdateEnv(struct env_t *env, uint8_t gate);
-static double OscSample(struct osc_t *osc);
+static float UpdateEnv(struct env_t *env, uint8_t gate);
+static float OscSample(struct osc_t *osc);
 
 int CreateVoice(struct voice_t** v)
 {
@@ -32,7 +32,7 @@ static void DefaultVoice(struct voice_t *v)
 		v->op[i].pw = 0.5;
 		v->op[i].inc = 0.1;
 		v->op[i].mult = 1;
-		v->op[i].shape = 1;
+		v->op[i].shape = 0;
 		v->opFMSource[i] = -1;
 		v->opFMIndex[i] = 0;
 
@@ -52,15 +52,15 @@ static void DefaultVoice(struct voice_t *v)
 }
 
 /** Quick voice mixer test */
-double VoiceSample(struct voice_t* v)
+float VoiceSample(struct voice_t* v)
 {
-	double s[VOICE_OPCOUNT] = {0};
-	double sum = 0;
+	float s[VOICE_OPCOUNT] = {0};
+	float sum = 0;
 	int i;
 
 	for (i = 0; i < VOICE_OPCOUNT; i++)
 	{
-		double amp = UpdateEnv(&v->env[i], v->gate);
+		float amp = UpdateEnv(&v->env[i], v->gate);
 
 		if (amp)
 		{
@@ -93,7 +93,7 @@ double VoiceSample(struct voice_t* v)
 		int src = v->opFMSource[i];
 		if (src >= 0)
 		{
-			double b = v->opFMIndex[i] * v->freq;
+			float b = v->opFMIndex[i] * v->freq;
 			v->op[i].inc = (v->freq + b * s[src]) / sampleRate;
 		}
 	}
@@ -101,7 +101,7 @@ double VoiceSample(struct voice_t* v)
 	return sum / VOICE_OPCOUNT;
 }
 
-static double UpdateEnv(struct env_t *env, uint8_t gate)
+static float UpdateEnv(struct env_t *env, uint8_t gate)
 {
 	if (!env->gate && gate)
 	{
@@ -149,7 +149,7 @@ static double UpdateEnv(struct env_t *env, uint8_t gate)
 	return env->amp;
 }
 
-void VoiceSetFreq(struct voice_t* v, double f)
+void VoiceSetFreq(struct voice_t* v, float f)
 {
 	int i;
 	v->freq = f;
@@ -166,7 +166,7 @@ void VoiceSetFreq(struct voice_t* v, double f)
  *
  * Sample values are in the range of -1 to 1.
  */
-static double OscSample(struct osc_t *osc)
+static float OscSample(struct osc_t *osc)
 {
 	/* Update phase. */
 	osc->count = fmod(osc->count + osc->inc * osc->mult, 1);
@@ -175,9 +175,9 @@ static double OscSample(struct osc_t *osc)
 }
 
 /* Pulse waveform */
-double Pulse(double phase, double pw)
+float Pulse(float phase, float pw)
 {
-	double result = -1;
+	float result = -1;
 	phase = fmod(phase, 1);
 	if (phase > pw)
 	{
@@ -187,9 +187,9 @@ double Pulse(double phase, double pw)
 	return result;
 }
 
-double Triangle(double phase)
+float Triangle(float phase)
 {
-	double result;
+	float result;
 	phase = fmod(phase, 1);
 	result = phase;
 	if (phase >= 0.5)
@@ -201,13 +201,13 @@ double Triangle(double phase)
 	return result * 4 - 1;
 }
 
-double Sine(double phase)
+float Sine(float phase)
 {
 	phase = fmod(phase, 1);
 	return sin(phase * 2 * M_PI);
 }
 
-double Saw(double phase)
+float Saw(float phase)
 {
 	phase = fmod(phase, 1);
 	return phase * 2 - 1;

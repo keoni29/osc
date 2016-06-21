@@ -19,15 +19,15 @@ enum filter_type
 
 struct filter_t
 {
-	double	k,	/**< Filter time constant (calculated) */
+	float	k,	/**< Filter time constant (calculated) */
 			yn,	/**< Previous output value (calculated) */
 			xn;	/**< Previous input value (calculated) */
 	enum filter_type type; /**< Specifies the which kind of filter operation to perform */
 };
 
 /** Calculates the time constant based on the provided cutoff frequency fc */
-void CreateFilter(struct filter_t *f, double fc, enum filter_type type);
+void CreateFilter(struct filter_t *f, float fc, enum filter_type type);
 /** Perform a filtering operation on input x. The filter state is stored in f. */
-double ProcessFilter(double x, struct filter_t *f);
+float ProcessFilter(float x, struct filter_t *f);
 
 #endif /* FILTER_H_ */
