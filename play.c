@@ -5,6 +5,7 @@
 #include "config.h"
 #include "play.h"
 #include "smf.h"
+#include "pcm.h"
 
 #define VOICE_COUNT 15
 
@@ -12,11 +13,15 @@ static SDL_mutex *mut;
 static struct voice_t *ensemble[VOICE_COUNT];
 static int vgate[VOICE_COUNT];
 
-FILE *export;
+static struct pcm_t drum[128];
 
-/** Play SFM frame-by-frame.
+#ifdef DEBUG
+FILE *export;
+#endif
+
+/** Play SMF frame-by-frame.
  * 	Returns amount of frames before next event. */
-uint32_t PlaySFM()
+uint32_t PlaySMF()
 {
 	int result;
 	uint32_t frames = 0;
@@ -36,6 +41,11 @@ uint32_t PlaySFM()
 				{
 					PlayNoteOff(e.p1, e.p1);
 				}
+				else
+				{
+					/* Todo perhaps volume envelope for pcm? */
+					//PCMStop(&drum[e.p1]);
+				}
 				break;
 
 			case SMF_NoteOn:
@@ -48,6 +58,21 @@ uint32_t PlaySFM()
 					else
 					{
 						PlayNoteOn(e.p1, e.p1);
+					}
+				}
+				else
+				{
+					/* Todo remove this printf */
+#ifdef DEBUG
+					printf("Drum %d\n", e.p1);
+#endif
+					if (e.p2 == 0)
+					{
+						PCMStop(&drum[e.p1]);
+					}
+					else
+					{
+						PCMStart(&drum[e.p1]);
 					}
 				}
 				break;
@@ -103,19 +128,26 @@ void PlayRenderSample(void* userdata, uint8_t* stream, int len)
 	}
 	else
 	{
+
 		for (i = 0; i < len; i++)
 		{
 			float* ptr = (float *)stream + i;
 			*ptr = 0;
+
+			for (j = 35; j < 81; j++)
+			{
+				*ptr += PCMSample(&drum[j]);
+			}
+
 			for (j = 0; j < VOICE_COUNT; j++)
 			{
 				struct voice_t *v = *(e + j);
-				*ptr += VoiceSample(v) / VOICE_COUNT;	/* Todo change this arbitrary constant */
+				*ptr += VoiceSample(v) / 10;	/* Todo change this arbitrary constant */
 			}
 
 			if (playing && frames == 0)
 			{
-				frames = PlaySFM();
+				frames = PlaySMF();
 				if (frames == 0)
 				{
 					playing = 0;
@@ -126,9 +158,9 @@ void PlayRenderSample(void* userdata, uint8_t* stream, int len)
 				--frames;
 			}
 		}
-
+#ifdef DEBUG
 		fwrite(stream, len, sizeof(float), export);
-
+#endif
 		SDL_mutexV(mut);
 	}
 }
@@ -137,8 +169,21 @@ int PlayInit()
 {
 	struct voice_t *v;
 	int i, j;
-
+#ifdef DEBUG
 	export = fopen("text.raw", "w");
+#endif
+
+	/* First create empty pcm samples */
+	for (i = 0; i < 128; i++)
+	{
+		char str[20];
+		sprintf(str, "samples/drums/%d.wav", i);
+		if (PCMCreate(str, &drum[i]) < 0)
+		{
+			fprintf(stderr, "Could not load sample %d\n", i);
+			PCMCreateEmpty(&drum[i]);
+		}
+	}
 
 	/* Setup a patch for this voice */
 	for(i = 0; i < VOICE_COUNT; i++)

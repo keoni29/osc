@@ -10,6 +10,7 @@
 #include "notes.h"
 #include "play.h"
 #include "smf.h"
+#include "pcm.h"
 /**********************************/
 
 static int Code2Note(SDL_Scancode s);
