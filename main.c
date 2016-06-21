@@ -34,8 +34,9 @@ int main(int argc, char **argv)
 			fprintf(stderr, "Error loading midi file.\r\n");
 			exit(1);
 		}
-		PlayInit();
 	}
+
+	PlayInit();
 
 	printf("Start... \r\n");
 

@@ -6,11 +6,12 @@
 #include "play.h"
 #include "smf.h"
 
-#define VOICE_COUNT 10
+#define VOICE_COUNT 15
 
 static SDL_mutex *mut;
 static struct voice_t *ensemble[VOICE_COUNT];
 static int vgate[VOICE_COUNT];
+
 
 /** Play SFM frame-by-frame.
  * 	Returns amount of frames before next event. */
@@ -31,12 +32,23 @@ uint32_t PlaySFM()
 			{
 			case SMF_NoteOff:
 				if (e.channel != 10)
+				{
 					PlayNoteOff(e.p1, e.p1);
+				}
 				break;
 
 			case SMF_NoteOn:
 				if (e.channel != 10)
-					PlayNoteOn(e.p1, e.p1);
+				{
+					if (e.p2 == 0)
+					{
+						PlayNoteOff(e.p1, e.p1);
+					}
+					else
+					{
+						PlayNoteOn(e.p1, e.p1);
+					}
+				}
 				break;
 
 			case SMF_KeyPressure:
@@ -97,8 +109,14 @@ void PlayRenderSample(void* userdata, uint8_t* stream, int len)
 			for (j = 0; j < VOICE_COUNT; j++)
 			{
 				struct voice_t *v = *(e + j);
-				*ptr += VoiceSample(v) / 4;	/* Todo change this arbitrary constant */
+				*ptr += VoiceSample(v) / VOICE_COUNT;	/* Todo change this arbitrary constant */
 			}
+
+			if (*ptr > 1 || *ptr < -1)
+			{
+				printf("Clip\n");
+			}
+
 			if (playing && frames == 0)
 			{
 				frames = PlaySFM();
@@ -125,16 +143,17 @@ int PlayInit()
 	{
 		CreateVoice(&v);
 		ensemble[i] = v;
-		//v->opFMIndex[0] = 5;
-		//v->opFMSource[0] = 1;
+		v->opFMIndex[0] = 5;
+		v->opFMSource[0] = 1;
 		v->env[0].r = 0.5;
 
-		/*v->env[1].a = 1;
+		v->env[1].a = 0.001;
+		v->env[1].d = 0.02;
+		v->env[1].s = 0.7;
 		v->op[1].mult = 2;
-		v->env[1].r = 0.8;*/
+		v->env[1].r = 0.8;
 
 		v->op[1].mult = 2;
-		v->mix[1] = 0.5;
 		for (j = 0; j < VOICE_OPCOUNT - 1; j++)
 		{
 			;
