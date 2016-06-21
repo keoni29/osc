@@ -12,6 +12,7 @@ static SDL_mutex *mut;
 static struct voice_t *ensemble[VOICE_COUNT];
 static int vgate[VOICE_COUNT];
 
+FILE *export;
 
 /** Play SFM frame-by-frame.
  * 	Returns amount of frames before next event. */
@@ -112,11 +113,6 @@ void PlayRenderSample(void* userdata, uint8_t* stream, int len)
 				*ptr += VoiceSample(v) / VOICE_COUNT;	/* Todo change this arbitrary constant */
 			}
 
-			if (*ptr > 1 || *ptr < -1)
-			{
-				printf("Clip\n");
-			}
-
 			if (playing && frames == 0)
 			{
 				frames = PlaySFM();
@@ -130,6 +126,9 @@ void PlayRenderSample(void* userdata, uint8_t* stream, int len)
 				--frames;
 			}
 		}
+
+		fwrite(stream, len, sizeof(float), export);
+
 		SDL_mutexV(mut);
 	}
 }
@@ -138,6 +137,9 @@ int PlayInit()
 {
 	struct voice_t *v;
 	int i, j;
+
+	export = fopen("text.raw", "w");
+
 	/* Setup a patch for this voice */
 	for(i = 0; i < VOICE_COUNT; i++)
 	{
@@ -147,6 +149,7 @@ int PlayInit()
 		v->opFMSource[0] = 1;
 		v->env[0].r = 0.5;
 
+
 		v->env[1].a = 0.001;
 		v->env[1].d = 0.02;
 		v->env[1].s = 0.7;
@@ -154,6 +157,7 @@ int PlayInit()
 		v->env[1].r = 0.8;
 
 		v->op[1].mult = 2;
+
 		for (j = 0; j < VOICE_OPCOUNT - 1; j++)
 		{
 			;

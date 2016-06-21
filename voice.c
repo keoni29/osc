@@ -30,7 +30,7 @@ static void DefaultVoice(struct voice_t *v)
 	{
 		v->op[i].count = 0;
 		v->op[i].pw = 0.5;
-		v->op[i].inc = 0;
+		v->op[i].inc = 0.1;
 		v->op[i].mult = 1;
 		v->op[i].shape = 1;
 		v->opFMSource[i] = -1;
@@ -47,6 +47,7 @@ static void DefaultVoice(struct voice_t *v)
 		v->mix[i] = 0;
 	}
 
+	v->gate = 0;
 	v->mix[0] = 1;
 }
 
