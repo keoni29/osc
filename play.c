@@ -6,24 +6,25 @@
 #include "play.h"
 #include "smf.h"
 
-#define VOICE_COUNT 20
+#define VOICE_COUNT 10
 
 static SDL_mutex *mut;
 static struct voice_t *ensemble[VOICE_COUNT];
 static int vgate[VOICE_COUNT];
 
-uint32_t Play(uint32_t interval, void *param)
+/** Play SFM frame-by-frame.
+ * 	Returns amount of frames before next event. */
+uint32_t PlaySFM()
 {
 	int result;
+	uint32_t frames = 0;
+	uint32_t interval;
 	struct SMF_event e;
-	int start = SDL_GetTicks();
-	int end;
-	interval = 10;	/* In case interval value is not updated */
 	while (1)
 	{
 		result = SMF_PollEvent(&e, &interval);
 
-		if (result == 1)
+		if (result == SMF_EVENT_READY)
 		{
 			/* Todo process every event */
 			switch (e.status)
@@ -60,28 +61,27 @@ uint32_t Play(uint32_t interval, void *param)
 				break;
 			}
 		}
+		else if (result == SMF_STOPPED)
+		{
+			return 0;
+		}
 
-		/** Account for latency */
-		if (interval)
+		frames = (interval * sampleRate) / 1000;
+		if (frames)
 		{
 			break;
 		}
 	}
 
-	/* Todo figure out why timing is off */
-	/*end = SDL_GetTicks();
-	if (end - start <= interval)
-	{
-		interval -= end - start;
-	}*/
-
-	return interval;
+	return frames;
 }
 
 /** Callback for filling the audio stream buffer */
 void PlayRenderSample(void* userdata, uint8_t* stream, int len)
 {
 	int i, j;
+	static uint8_t playing = 1;
+	static uint32_t frames = 0;
 	struct voice_t **e = (struct voice_t **)userdata;
 	len = len / sizeof(float);
 	if (SDL_mutexP(mut) == -1)
@@ -97,7 +97,19 @@ void PlayRenderSample(void* userdata, uint8_t* stream, int len)
 			for (j = 0; j < VOICE_COUNT; j++)
 			{
 				struct voice_t *v = *(e + j);
-				*ptr += VoiceSample(v) / 4;
+				*ptr += VoiceSample(v) / 4;	/* Todo change this arbitrary constant */
+			}
+			if (playing && frames == 0)
+			{
+				frames = PlaySFM();
+				if (frames == 0)
+				{
+					playing = 0;
+				}
+			}
+			else
+			{
+				--frames;
 			}
 		}
 		SDL_mutexV(mut);
@@ -113,16 +125,16 @@ int PlayInit()
 	{
 		CreateVoice(&v);
 		ensemble[i] = v;
-		/*v->opFMIndex[0] = 5;
-		v->opFMSource[0] = 1;
+		//v->opFMIndex[0] = 5;
+		//v->opFMSource[0] = 1;
 		v->env[0].r = 0.5;
 
-		v->env[1].a = 1;
-		v->op[1].mult = 0.25;
-		v->env[1].r = 0.8;
+		/*v->env[1].a = 1;
+		v->op[1].mult = 2;
+		v->env[1].r = 0.8;*/
 
-		v->op[2].mult = 2;
-		v->mix[2] = 1;*/
+		v->op[1].mult = 2;
+		v->mix[1] = 0.5;
 		for (j = 0; j < VOICE_OPCOUNT - 1; j++)
 		{
 			;

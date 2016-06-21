@@ -18,7 +18,4 @@ int PlayNoteOn(int note, int key);
 
 int PlayNoteOff(int note, int key);
 
-/** Timer callback for playing midi files */
-uint32_t Play(uint32_t interval, void *param);
-
 #endif /* PLAY_H_ */

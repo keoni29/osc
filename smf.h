@@ -16,6 +16,7 @@
 /** Return values for SMF_PollEvent() */
 #define SMF_EVENT_READY 1
 #define SMF_NO_EVENTS 0
+#define SMF_STOPPED -1
 
 /** Bits [6..4] of the midi status byte. */
 enum SMF_status

@@ -22,16 +22,22 @@ static struct SMF_track track[SMF_MAX_TRACKS];
 
 /* Poll MIDI event.
  * Returns 1 on succes, SFM_event contains event and dt contains interval in ms.
+ * Returns SMF_STOPPED on playback end.
  */
 int SMF_PollEvent(struct SMF_event *e, uint32_t *dt)
 {
-	int result = 0;
+	int result = SMF_NO_EVENTS;
 	//int i;
 	int a = 0; /* Todo implement for multiple tracks */
 	uint32_t length;
 	uint8_t type;
 
 	uint8_t status = track[a].status;
+
+	if (track->head >= track->length)
+	{
+		return SMF_STOPPED;
+	}
 
 	if (!(Peek(&track[a]) & 0x80))
 	{

@@ -27,15 +27,15 @@ int main(int argc, char **argv)
 	window = SDL_CreateWindow("FM synth demo", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 240, 0);
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 
-	PlayInit();
-
-	if (SMF_Load("bewstorm0.mid") < 0)
+	if (argc >= 2)
 	{
-		fprintf(stderr, "Error loading midi file.\r\n");
-		exit(1);
+		if (SMF_Load(argv[1]) < 0)
+		{
+			fprintf(stderr, "Error loading midi file.\r\n");
+			exit(1);
+		}
+		PlayInit();
 	}
-
-	SDL_TimerID tid = SDL_AddTimer(500, Play, NULL);
 
 	printf("Start... \r\n");
 
@@ -87,7 +87,6 @@ int main(int argc, char **argv)
 
 	/* Stop playing sound */
 	SDL_CloseAudio();
-	SDL_RemoveTimer(tid);
 	printf("Stop... \r\n");
 
 	SDL_DestroyRenderer(renderer);

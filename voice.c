@@ -32,9 +32,9 @@ static void DefaultVoice(struct voice_t *v)
 		v->op[i].pw = 0.5;
 		v->op[i].inc = 0;
 		v->op[i].mult = 1;
-		v->op[i].shape = 0;
+		v->op[i].shape = 2;
 		v->opFMSource[i] = -1;
-		v->opFMIndex[i] = -1;
+		v->opFMIndex[i] = 0;
 
 		v->env[i].amp = 0;
 		v->env[i].a = 0.001;
