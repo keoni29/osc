@@ -1,4 +1,5 @@
 #include <SDL2/SDL.h>
+#include <libconfig.h>
 #include "SDL2/SDL_thread.h"
 #include "notes.h"
 #include "voice.h"
@@ -168,7 +169,7 @@ void PlayRenderSample(void* userdata, uint8_t* stream, int len)
 int PlayInit()
 {
 	struct voice_t *v;
-	int i, j;
+	int i;
 #ifdef DEBUG
 	export = fopen("text.raw", "w");
 #endif
@@ -180,36 +181,21 @@ int PlayInit()
 		sprintf(str, "samples/drums/%d.wav", i);
 		if (PCMCreate(str, &drum[i]) < 0)
 		{
+#ifdef DEBUG
 			fprintf(stderr, "Could not load sample %d\n", i);
+#endif
 			PCMCreateEmpty(&drum[i]);
 		}
 	}
 
-	/* Setup a patch for this voice */
 	for(i = 0; i < VOICE_COUNT; i++)
 	{
 		CreateVoice(&v);
 		ensemble[i] = v;
-		v->opFMIndex[0] = 5;
-		v->opFMSource[0] = 1;
-		v->env[0].r = 0.5;
-
-
-		v->env[1].a = 0.001;
-		v->env[1].d = 0.02;
-		v->env[1].s = 0.7;
-		v->op[1].mult = 2;
-		v->env[1].r = 0.8;
-
-		v->op[1].mult = 2;
-
-		for (j = 0; j < VOICE_OPCOUNT - 1; j++)
-		{
-			;
-		}
-
 		vgate[i] = -1;
 	}
+
+
 
 	/* Desired audio settings */
 	SDL_AudioSpec have = {
@@ -235,6 +221,85 @@ int PlayInit()
 	return 0;
 }
 
+/** Returns -1 on failure, 0 on success */
+int PlayLoadConfig(const char *fname, const char *patch)
+{
+	config_t config;
+	struct voice_t *v;
+	int i, j;
+
+	/* Read the configuration file */
+	config_init(&config);
+
+	if (config_read_file(&config, fname) == CONFIG_FALSE)
+	{
+		fprintf(stderr, "%s\n", config_error_text(&config));
+		return -1;
+	}
+	else
+	{
+		config_set_auto_convert(&config, CONFIG_OPTION_AUTOCONVERT);
+	}
+
+	for(i = 0; i < VOICE_COUNT; i++)
+	{
+		char path[100];
+		double f;
+		int d;
+
+		v = ensemble[i];
+
+		if (SDL_mutexP(mut) == -1)
+		{
+			fprintf(stderr, "Could not lock mutex.\r\n");
+			return -1;
+		}
+		else
+		{
+			/* Todo: when float fails try integer */
+			for(j = 0; j < VOICE_OPCOUNT; j++)
+			{
+				sprintf(path,"%s.op.[%d].mult", patch, j);
+				config_lookup_float(&config, path, &f);
+				v->op[j].mult = f;
+				sprintf(path, "%s.op.[%d].shape", patch, j);
+				config_lookup_int(&config, path, &d);
+				v->op[j].shape = d;
+				sprintf(path, "%s.op.[%d].pw", patch, j);
+				config_lookup_float(&config, path, &f);
+				v->op[j].pw = f;
+				sprintf(path, "%s.op.[%d].a", patch, j);
+				config_lookup_float(&config, path, &f);
+				v->env[j].a = f;
+				sprintf(path, "%s.op.[%d].d", patch, j);
+				config_lookup_float(&config, path, &f);
+				v->env[j].d = f;
+				sprintf(path, "%s.op.[%d].s", patch, j);
+				config_lookup_float(&config, path, &f);
+				v->env[j].s = f;
+				sprintf(path, "%s.op.[%d].r", patch, j);
+				config_lookup_float(&config, path, &f);
+				v->env[j].r = f;
+				sprintf(path, "%s.op.[%d].mix", patch, j);
+				config_lookup_float(&config, path, &f);
+				v->mix[j] = f;
+				sprintf(path, "%s.op.[%d].fmsrc", patch, j);
+				config_lookup_int(&config, path, &d);
+				v->opFMSource[j] = d;
+				sprintf(path, "%s.op.[%d].fmi", patch, j);
+				config_lookup_float(&config, path, &f);
+				v->opFMIndex[j] = f;
+			}
+			SDL_mutexV(mut);
+		}
+
+		PlayNoteOff(i, i);
+	}
+
+	config_destroy(&config);
+	return 0;
+}
+
 int PlayNoteOn(int note, int key)
 {
 	float freq;
@@ -246,9 +311,17 @@ int PlayNoteOn(int note, int key)
 		{
 			if (vgate[i] == -1)
 			{
-				vgate[i] = key;
-				r = 1;
-				break;
+				SDL_mutexP(mut);
+				if (ensemble[i]->env[0].amp < 0.1)
+				{
+					vgate[i] = key;
+					r = 1;
+				}
+				SDL_mutexV(mut);
+				if (r)
+				{
+					break;
+				}
 			}
 		}
 
@@ -275,6 +348,7 @@ int PlayNoteOn(int note, int key)
 	return key;
 }
 
+/* Todo get rid of note parameter as it is unused */
 int PlayNoteOff(int note, int key)
 {
 	int i;

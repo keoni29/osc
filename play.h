@@ -18,4 +18,6 @@ int PlayNoteOn(int note, int key);
 
 int PlayNoteOff(int note, int key);
 
+int PlayLoadConfig(const char *fname, const char *patch);
+
 #endif /* PLAY_H_ */

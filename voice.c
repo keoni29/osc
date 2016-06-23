@@ -93,8 +93,8 @@ float VoiceSample(struct voice_t* v)
 		int src = v->opFMSource[i];
 		if (src >= 0)
 		{
-			float b = v->opFMIndex[i] * v->freq;
-			v->op[i].inc = (v->freq + b * s[src]) / sampleRate;
+			float b = v->opFMIndex[i];
+			v->op[i].inc = (v->freq * (1 + b * s[src])) / sampleRate;
 		}
 	}
 
@@ -105,7 +105,7 @@ static float UpdateEnv(struct env_t *env, uint8_t gate)
 {
 	if (!env->gate && gate)
 	{
-		/* Reset envelope and start attack */
+		/* Todo make env generator reset optional. Reset envelope and start attack */
 		env->amp = 0;
 		env->dir = 1;
 	}

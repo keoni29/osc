@@ -23,14 +23,21 @@ int main(int argc, char **argv)
 	    exit(1);
 	}
 
+	char patch[100];
 	SDL_Renderer *renderer = NULL;
 	SDL_Window *window = NULL;
 	window = SDL_CreateWindow("FM synth demo", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 240, 0);
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 
+	sprintf(patch, "%s", "grand");
 	if (argc >= 2)
 	{
-		if (SMF_Load(argv[1]) < 0)
+		sprintf(patch, "%s", argv[1]);
+	}
+
+	if (argc >= 3)
+	{
+		if (SMF_Load(argv[2]) < 0)
 		{
 			fprintf(stderr, "Error loading midi file.\r\n");
 			exit(1);
@@ -38,6 +45,7 @@ int main(int argc, char **argv)
 	}
 
 	PlayInit();
+	PlayLoadConfig("voice.cfg", patch);
 
 	printf("Start... \r\n");
 
@@ -71,6 +79,22 @@ int main(int argc, char **argv)
 					else if (e.key.keysym.scancode == SDL_SCANCODE_MINUS)
 					{
 						oct -=1;
+					}
+					else if (e.key.keysym.scancode == SDL_SCANCODE_1)
+					{
+						PlayLoadConfig("voice.cfg", "grand");
+					}
+					else if (e.key.keysym.scancode == SDL_SCANCODE_2)
+					{
+						PlayLoadConfig("voice.cfg", "organ1");
+					}
+					else if (e.key.keysym.scancode == SDL_SCANCODE_3)
+					{
+						PlayLoadConfig("voice.cfg", "bell1");
+					}
+					else if (e.key.keysym.scancode == SDL_SCANCODE_4)
+					{
+						PlayLoadConfig("voice.cfg", "bell2");
 					}
 				}
 			}
