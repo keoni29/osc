@@ -2,13 +2,16 @@
 #include "pcm.h"
 #include "config.h"
 
+/* Todo make this a setting in the config file or use midi velocities.*/
+static const float pcmVolume = 0.4;
+
 float PCMSample(struct pcm_t *p)
 {
 	float result = 0;
 	if (p->playing && p->count < p->length)
 	{
 		++p->count;
-		result = (float)p->data[p->count] / 32768;
+		result = (float)p->data[p->count] * pcmVolume / 32768;
 	}
 	else
 	{

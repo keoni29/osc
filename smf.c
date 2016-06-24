@@ -26,17 +26,34 @@ static struct SMF_track track[SMF_MAX_TRACKS];
 int SMF_PollEvent(struct SMF_event *e, uint32_t *dt)
 {
 	int result = SMF_NO_EVENTS;
-	//int i;
-	int a = 0; /* Todo implement for multiple tracks */
+	int i;
+	int a = -1; /* Todo implement for multiple tracks */
 	uint32_t length;
 	uint8_t type;
+	uint8_t status;
 
-	uint8_t status = track[a].status;
-
-	if (track->head >= track->length)
+	for (i = 0; i < trackCount; i++)
 	{
+		if (track[i].dt == 0)
+		{
+			if (track[i].head < track[i].length)
+			{
+				a = i;
+				break;
+			}
+		}
+	}
+
+	if (a == -1)
+	{
+		/* Something went wrong */
+#ifdef DEBUG
+		fprintf(stderr, "None of the tracks are ready to play. Stopping playback! \n");
+#endif
 		return SMF_STOPPED;
 	}
+
+	status = track[a].status;
 
 	if (!(Peek(&track[a]) & 0x80))
 	{
@@ -104,22 +121,26 @@ int SMF_PollEvent(struct SMF_event *e, uint32_t *dt)
 	}
 
 	/* Calculate delta time in us */
-	track[a].dt = (VData(&track[a]) * tick) / 1000;
+	track[a].dt = VData(&track[a]);
 
 	/* Todo determine smallest dt */
 	/* Whose first up? (Smallest delta time.) */
-	/*uint32_t min = track[0];
+	uint32_t min = -1;
 	for (i = 0; i < trackCount; i++)
 	{
-		if (track[i] < min)
+		if (track[i].dt < min && track[i].head < track[i].length)
 		{
-			min = track[i];
+			min = track[i].dt;
 		}
-	}*/
+	}
+
+	for (i = 0; i < trackCount; i++)
+	{
+		track[i].dt -= min;
+	}
 
 	/* Calculate delta time in ms */
-	//*dt = min / 1000;
-	*dt = track[a].dt;
+	*dt = (min * tick) / 1000;
 
 	return result;
 }
@@ -187,8 +208,9 @@ int SMF_Load(char* filename)
 
 		/* Rewind head to start */
 		track[i].head = 0;
+
 		/* Todo Calculate initial delta time in ms */
-		VData(&track[i]);
+		track[i].dt = VData(&track[i]);
 	}
 
 	return SMF_SUCCESS;

@@ -143,7 +143,7 @@ void PlayRenderSample(void* userdata, uint8_t* stream, int len)
 			for (j = 0; j < VOICE_COUNT; j++)
 			{
 				struct voice_t *v = *(e + j);
-				*ptr += VoiceSample(v) / 10;	/* Todo change this arbitrary constant */
+				*ptr += VoiceSample(v) / 8;	/* Todo change this arbitrary constant */
 			}
 
 			if (playing && frames == 0)

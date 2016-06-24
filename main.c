@@ -40,7 +40,7 @@ int main(int argc, char **argv)
 		if (SMF_Load(argv[2]) < 0)
 		{
 			fprintf(stderr, "Error loading midi file.\r\n");
-			exit(1);
+			//exit(1);
 		}
 	}
 
