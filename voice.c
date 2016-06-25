@@ -7,6 +7,8 @@ static void DefaultVoice(struct voice_t *v);
 static float UpdateEnv(struct env_t *env, uint8_t gate);
 static float OscSample(struct osc_t *osc);
 
+/** Create a new voice
+ * 	Returns a negative value on failure. */
 int CreateVoice(struct voice_t** v)
 {
 	*v = NULL;
@@ -14,13 +16,12 @@ int CreateVoice(struct voice_t** v)
 
 	if (*v == NULL)
 	{
-		return 0;
+		return -1;
 	}
 
 	DefaultVoice(*v);
 
-	//filter_t filter[2];
-	return 1;
+	return 0;
 }
 
 static void DefaultVoice(struct voice_t *v)

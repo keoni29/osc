@@ -10,7 +10,7 @@
 #include "notes.h"
 #include "play.h"
 #include "smf.h"
-#include "pcm.h"
+#include "channel.h"
 /**********************************/
 
 static int Code2Note(SDL_Scancode s);
@@ -29,15 +29,9 @@ int main(int argc, char **argv)
 	window = SDL_CreateWindow("FM synth demo", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 240, 0);
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 
-	sprintf(patch, "%s", "grand");
 	if (argc >= 2)
 	{
-		sprintf(patch, "%s", argv[1]);
-	}
-
-	if (argc >= 3)
-	{
-		if (SMF_Load(argv[2]) < 0)
+		if (SMF_Load(argv[1]) < 0)
 		{
 			fprintf(stderr, "Error loading midi file.\r\n");
 			//exit(1);
@@ -45,7 +39,6 @@ int main(int argc, char **argv)
 	}
 
 	PlayInit();
-	PlayLoadConfig("voice.cfg", patch);
 
 	printf("Start... \r\n");
 
@@ -63,7 +56,7 @@ int main(int argc, char **argv)
 				break;
 			}
 
-			if (e.type == SDL_KEYDOWN && e.key.repeat == 0)
+			/*if (e.type == SDL_KEYDOWN && e.key.repeat == 0)
 			{
 				note = Code2Note(e.key.keysym.scancode);
 				if (note >= 0)
@@ -102,7 +95,7 @@ int main(int argc, char **argv)
 			{
 				note = Code2Note(e.key.keysym.scancode);
 				PlayNoteOff(note + oct * 12, note);
-			}
+			}*/
 
 		}
 

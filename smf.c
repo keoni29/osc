@@ -12,6 +12,7 @@ static void SkipData(struct SMF_track *track, uint32_t skip);	/**< Skip over sev
 static int VerifyTrack(struct SMF_track* track);
 static int _strcmpl(char *str1, char *str2, uint32_t len);	/**< Compare two strings */
 
+/* Todo put this in a struct */
 static uint32_t usPerBeat = 500000;
 static uint32_t ticksPerBeat;
 static uint32_t tick;
