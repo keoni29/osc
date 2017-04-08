@@ -7,9 +7,8 @@
 #include "pcm.h"
 #include "channel.h"
 
+#define CH_DRUMS 9
 
-/* Todo BUG Could not lock mutex. */
-/* Todo BUG pointers */
 extern SDL_mutex *mut;
 
 /** Create a new midi channel
@@ -23,7 +22,7 @@ int CreateChannel(struct channel_t *c, uint16_t number)
 
 	c->number = number;
 
-	if (number == 10)
+	if (c->number == CH_DRUMS)
 	{
 		c->voiceCount = 0;
 		/* Todo make special PCM voices */
@@ -61,7 +60,7 @@ float ChannelSample(struct channel_t *c)
 	float result = 0;
 	int i;
 
-	if (c->number == 10)
+	if (c->number == CH_DRUMS)
 	{
 		for (i = 35; i < 81; i++)
 		{
@@ -85,7 +84,7 @@ int ChannelEvent(struct channel_t *c, struct SMF_event *e)
 	switch (e->status)
 	{
 	case SMF_NoteOff:
-		if (c->number != 10)
+		if (c->number != CH_DRUMS)
 		{
 			ChannelNoteOff(c, e->p1, e->p1);
 		}
@@ -97,7 +96,7 @@ int ChannelEvent(struct channel_t *c, struct SMF_event *e)
 		break;
 
 	case SMF_NoteOn:
-		if (c->number != 10)
+		if (c->number != CH_DRUMS)
 		{
 			if (e->p2 == 0)
 			{
@@ -105,7 +104,7 @@ int ChannelEvent(struct channel_t *c, struct SMF_event *e)
 			}
 			else
 			{
-				ChannelNoteOn(c, e->p1, e->p1);
+				ChannelNoteOn(c, e->p1, e->p1, e->p2);
 			}
 		}
 		else
@@ -149,12 +148,14 @@ int ChannelEvent(struct channel_t *c, struct SMF_event *e)
 	return 0;
 }
 
+/* Todo note history stack? */
+
 /** Play a note
  *	note : The midi note value to be played
  *	key : The key on the keyboard associated with this note
  *	channel : The midi channel number
  */
-int ChannelNoteOn(struct channel_t *c, int note, int key)
+int ChannelNoteOn(struct channel_t *c, int note, int key, uint8_t vel)
 {
 	float freq;
 	int i;
@@ -165,13 +166,12 @@ int ChannelNoteOn(struct channel_t *c, int note, int key)
 		{
 			if (c->vgate[i] == -1)
 			{
-				SDL_mutexP(mut);
-				if (c->voice[i]->env[0].amp < 0.1)
-				{
+				/* Todo put this back */
+				//if (c->voice[i]->env[0].amp < 0.3)
+				//{
 					c->vgate[i] = key;
 					r = 1;
-				}
-				SDL_mutexV(mut);
+				//}
 				if (r)
 				{
 					break;
@@ -188,17 +188,10 @@ int ChannelNoteOn(struct channel_t *c, int note, int key)
 			return -1;
 		}
 
-		if (SDL_mutexP(mut) == -1)
-		{
-			fprintf(stderr, "Could not lock mutex.\r\n");
-		}
-		else
-		{
-			freq = Note2Freq(note);
-			VoiceSetFreq(c->voice[i], freq);
-			VoiceGateOn(c->voice[i]);
-			SDL_mutexV(mut);
-		}
+		freq = Note2Freq(note);
+		VoiceSetFreq(c->voice[i], freq);
+		VoiceGateOn(c->voice[i]);
+		c->voice[i]->volume = (float)vel / 128;
 	}
 
 	return key;
@@ -226,15 +219,7 @@ int ChannelNoteOff(struct channel_t *c, int note, int key)
 			return -1;
 		}
 
-		if (SDL_mutexP(mut) == -1)
-		{
-			fprintf(stderr, "Could not lock mutex.\r\n");
-		}
-		else
-		{
-			VoiceGateOff(c->voice[i]);
-			SDL_mutexV(mut);
-		}
+		VoiceGateOff(c->voice[i]);
 	}
 	return key;
 }

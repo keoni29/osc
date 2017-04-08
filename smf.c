@@ -21,7 +21,7 @@ static struct SMF_track track[SMF_MAX_TRACKS];
 
 
 /* Poll MIDI event.
- * Returns 1 on succes, SFM_event contains event and dt contains interval in ms.
+ * Returns 1 on succes, SMF_event contains event and dt contains interval in ms.
  * Returns SMF_STOPPED on playback end.
  */
 int SMF_PollEvent(struct SMF_event *e, uint32_t *dt)
@@ -93,7 +93,7 @@ int SMF_PollEvent(struct SMF_event *e, uint32_t *dt)
 	}
 	else
 	{
-		e->channel = (status & 0x0F) + 1;
+		e->channel = (status & 0x0F);
 		e->status = (status & 0x70) >> 4;
 		/* MIDI event */
 		switch (status & 0xF0)
@@ -210,7 +210,7 @@ int SMF_Load(char* filename)
 		/* Rewind head to start */
 		track[i].head = 0;
 
-		/* Todo Calculate initial delta time in ms */
+		/* Initial delta time */
 		track[i].dt = VData(&track[i]);
 	}
 

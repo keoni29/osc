@@ -90,10 +90,10 @@ void PlayRenderSample(void* userdata, uint8_t* stream, int len)
 				--frames;
 			}
 		}
+		SDL_mutexV(mut);
 #ifdef DEBUG
 		fwrite(stream, len, sizeof(float), export);
 #endif
-		SDL_mutexV(mut);
 	}
 }
 

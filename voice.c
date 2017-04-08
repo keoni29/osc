@@ -46,6 +46,7 @@ static void DefaultVoice(struct voice_t *v)
 		v->env[i].dir = 0;
 
 		v->mix[i] = 0;
+		v->volume = 1;
 	}
 
 	v->gate = 0;
@@ -99,7 +100,7 @@ float VoiceSample(struct voice_t* v)
 		}
 	}
 
-	return sum / VOICE_OPCOUNT;
+	return sum * v->volume / VOICE_OPCOUNT;
 }
 
 static float UpdateEnv(struct env_t *env, uint8_t gate)

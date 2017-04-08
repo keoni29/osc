@@ -39,6 +39,7 @@ struct voice_t
 	float opFMIndex[VOICE_OPCOUNT];
 	struct filter_t filter[2];			/**< Two filters that can be configured as HPF, LPF, BPF or APF. */
 	float mix[VOICE_OPCOUNT];
+	float volume;						/**< Voice volume */
 	struct env_t env[VOICE_OPCOUNT];	/**< Volume envelope for each operator */
 };
 

@@ -8,7 +8,7 @@
 #ifndef CHANNEL_H_
 #define CHANNEL_H_
 
-#define MAX_POLYPHONY 4
+#define MAX_POLYPHONY 3
 
 #include "voice.h"
 #include "pcm.h"
@@ -25,7 +25,7 @@ struct channel_t
 
 int ChannelEvent(struct channel_t *c, struct SMF_event *e);
 
-int ChannelNoteOn(struct channel_t *c, int note, int key);
+int ChannelNoteOn(struct channel_t *c, int note, int key, uint8_t vel);
 
 int ChannelNoteOff(struct channel_t *c, int note, int key);
 
