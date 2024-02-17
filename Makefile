@@ -5,16 +5,16 @@ OBJ = $(SRC:%.c=%.o)
 
 
 CC = gcc
-CFLAGS = -O0 -g3 -Wall -fmessage-length=0
+CFLAGS = -O0 -Wall -fmessage-length=0
 CLIBS = -lSDL2 -lm -lconfig
 
 all: osc
 
 osc: $(OBJ)
-	$(CC) $^ -o $(NAME) $(CLIBS)
+	$(CC) $^ -g -o $(NAME) $(CLIBS)
 
 %.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) -g $(CFLAGS) -c $< -o $@
 
 clean:
-	rm *.a *.o osc
+	rm -f *.a *.o $(NAME)
