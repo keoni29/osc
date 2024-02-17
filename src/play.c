@@ -177,7 +177,7 @@ int PlayInit()
 	/* First create empty pcm samples */
 	for (i = 0; i < 128; i++)
 	{
-		char str[20];
+		char str[30];
 		sprintf(str, "samples/drums/%d.wav", i);
 		if (PCMCreate(str, &drum[i]) < 0)
 		{

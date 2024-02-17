@@ -1,20 +1,32 @@
 NAME = osc
-OBJ = main.o osc.o
-SRC = $(wildcard *.c)
-OBJ = $(SRC:%.c=%.o)
-
 
 CC = gcc
-CFLAGS = -O0 -Wall -fmessage-length=0
-CLIBS = -lSDL2 -lm -lconfig
+OBJDIR = build
+SRCDIR = src
+BINDIR = bin
+INCDIR = inc
 
-all: osc
+INC = -I$(INCDIR)
+SRC = $(shell find $(SRCDIR)/ -type f -name '*.c')
+OBJ = $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(SRC))
+BIN = $(addprefix $(BINDIR)/,$(NAME))
 
-osc: $(OBJ)
-	$(CC) $^ -g -o $(NAME) $(CLIBS)
+CFLAGS = -c -Wall -g $(INC)
+LDFLAGS = -g -lSDL2 -lm -lconfig
 
-%.o: %.c
-	$(CC) -g $(CFLAGS) -c $< -o $@
+all: $(BIN)
 
+$(BIN): $(OBJ)
+		@mkdir -p "$(@D)"
+		$(CC) $(LDFLAGS) $(OBJ) -o $@
+
+$(OBJDIR)/%.o: $(SRCDIR)/%.c
+		@mkdir -p "$(@D)"
+		$(CC) $(CFLAGS) $< -o $@
+
+.PHONY: clean purge
 clean:
-	rm -f *.a *.o $(NAME)
+		@rm -f $(OBJ) $(BIN) && echo "clean succesful" || echo "clean failed"
+
+purge:
+		@rm -rf $(OBJDIR) $(BINDIR) && echo "purge succesful" || echo "purge failed"

@@ -5,7 +5,7 @@
             "name": "(gdb) Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/osc",
+            "program": "${workspaceFolder}/bin/osc",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
