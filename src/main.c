@@ -23,11 +23,15 @@ int main(int argc, char **argv)
 	    exit(1);
 	}
 
-	char patch[100];
+	char patch[101];
 	SDL_Renderer *renderer = NULL;
 	SDL_Window *window = NULL;
 	window = SDL_CreateWindow("FM synth demo", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 240, 0);
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+
+	sprintf(patch, "%s", "grand");
+
+	printf("Argc = %d\n",argc);
 
 	if (argc >= 2)
 	{
@@ -39,6 +43,9 @@ int main(int argc, char **argv)
 	}
 
 	PlayInit();
+	if (PlayLoadConfig("voice.cfg", patch)) {
+		fprintf(stderr, "Error loading config file voice.cfg.\r\n");
+	}
 
 	printf("Start... \r\n");
 
